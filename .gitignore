@@ -31,6 +31,7 @@ coverage/
 logs/
 *.log
 npm-debug.log*
+.previous_deployed_tag
 
 # PDF & Course Materials (Keep repository clean)
 Kelompok CC 01.txt
