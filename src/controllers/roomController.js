@@ -17,7 +17,15 @@ async function getAllRooms(req, res) {
 async function getRoomById(req, res) {
   try {
     const { id } = req.params;
-    const result = await query('SELECT * FROM rooms WHERE id = $1', [id]);
+    const parsedId = Number(id);
+    if (!Number.isInteger(parsedId) || parsedId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID ruangan harus berupa bilangan bulat positif',
+      });
+    }
+
+    const result = await query('SELECT * FROM rooms WHERE id = $1', [parsedId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan' });
     }
@@ -31,24 +39,41 @@ async function getRoomById(req, res) {
 async function createRoom(req, res) {
   try {
     const { name, capacity, facilities, price_per_hour } = req.body;
-    if (!name || !capacity || !facilities || !price_per_hour) {
+    if (!name || capacity === undefined || !facilities || price_per_hour === undefined) {
       return res.status(400).json({
         success: false,
         message: 'Field name, capacity, facilities, dan price_per_hour wajib diisi',
       });
     }
 
-    if (parseInt(capacity, 10) <= 0 || parseFloat(price_per_hour) <= 0) {
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    if (!trimmedName || trimmedName.length > 100) {
       return res.status(400).json({
         success: false,
-        message: 'Kapasitas dan tarif harga per jam harus bernilai lebih dari 0',
+        message: 'Nama ruangan harus berupa string 1-100 karakter',
+      });
+    }
+
+    const numCapacity = Number(capacity);
+    if (!Number.isInteger(numCapacity) || numCapacity <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Kapasitas harus berupa bilangan bulat positif',
+      });
+    }
+
+    const numPrice = Number(price_per_hour);
+    if (isNaN(numPrice) || numPrice <= 0 || !isFinite(numPrice)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tarif harga per jam harus berupa angka positif',
       });
     }
 
     const result = await query(
       `INSERT INTO rooms (name, capacity, facilities, price_per_hour)
        VALUES ($1, $2, $3, $4) RETURNING *`,
-      [name, parseInt(capacity, 10), facilities, parseFloat(price_per_hour)]
+      [trimmedName, numCapacity, typeof facilities === 'string' ? facilities.trim() : JSON.stringify(facilities), numPrice]
     );
 
     return res.status(201).json({
@@ -65,11 +90,41 @@ async function createRoom(req, res) {
 async function updateRoom(req, res) {
   try {
     const { id } = req.params;
+    const parsedId = Number(id);
+    if (!Number.isInteger(parsedId) || parsedId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID ruangan harus berupa bilangan bulat positif',
+      });
+    }
+
     const { name, capacity, facilities, price_per_hour } = req.body;
 
-    const check = await query('SELECT id FROM rooms WHERE id = $1', [id]);
+    const check = await query('SELECT id FROM rooms WHERE id = $1', [parsedId]);
     if (check.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan' });
+    }
+
+    let parsedCapacity = null;
+    if (capacity !== undefined) {
+      parsedCapacity = Number(capacity);
+      if (!Number.isInteger(parsedCapacity) || parsedCapacity <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Kapasitas harus berupa bilangan bulat positif',
+        });
+      }
+    }
+
+    let parsedPrice = null;
+    if (price_per_hour !== undefined) {
+      parsedPrice = Number(price_per_hour);
+      if (isNaN(parsedPrice) || parsedPrice <= 0 || !isFinite(parsedPrice)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tarif harga per jam harus berupa angka positif',
+        });
+      }
     }
 
     const result = await query(
@@ -79,7 +134,13 @@ async function updateRoom(req, res) {
            facilities = COALESCE($3, facilities),
            price_per_hour = COALESCE($4, price_per_hour)
        WHERE id = $5 RETURNING *`,
-      [name, capacity, facilities, price_per_hour, id]
+      [
+        name ? name.trim() : null,
+        parsedCapacity,
+        facilities ? (typeof facilities === 'string' ? facilities.trim() : JSON.stringify(facilities)) : null,
+        parsedPrice,
+        parsedId,
+      ]
     );
 
     return res.status(200).json({
@@ -96,7 +157,15 @@ async function updateRoom(req, res) {
 async function deleteRoom(req, res) {
   try {
     const { id } = req.params;
-    const result = await query('DELETE FROM rooms WHERE id = $1 RETURNING *', [id]);
+    const parsedId = Number(id);
+    if (!Number.isInteger(parsedId) || parsedId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID ruangan harus berupa bilangan bulat positif',
+      });
+    }
+
+    const result = await query('DELETE FROM rooms WHERE id = $1 RETURNING *', [parsedId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Ruangan tidak ditemukan' });
     }
@@ -117,6 +186,13 @@ async function checkAvailability(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Parameter date (YYYY-MM-DD) wajib disertakan',
+      });
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(Date.parse(date))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Format tanggal date harus YYYY-MM-DD yang valid',
       });
     }
 

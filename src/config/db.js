@@ -42,7 +42,7 @@ if (process.env.NODE_ENV !== 'test' || process.env.TEST_WITH_REAL_DB === 'true')
     user: process.env.DB_USER || 'ruangkita_user',
     password: process.env.DB_PASSWORD || 'ruangkita_secret_password',
     database: process.env.DB_NAME || 'ruangkita_db',
-    max: 10,
+    max: 25, // Diperbesar untuk menangani lonjakan request konkurensi ekstrem
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
   });
@@ -59,6 +59,14 @@ async function mockQuery(text, params = []) {
   // Healthcheck SELECT 1
   if (normalized.includes('SELECT 1')) {
     return { rows: [{ alive: 1 }] };
+  }
+
+  // Transaction control & Advisory Locks
+  if (normalized.startsWith('BEGIN') || normalized.startsWith('COMMIT') || normalized.startsWith('ROLLBACK')) {
+    return { rows: [] };
+  }
+  if (normalized.includes('pg_advisory_xact_lock')) {
+    return { rows: [] };
   }
 
   // CREATE TABLE
@@ -111,7 +119,7 @@ async function mockQuery(text, params = []) {
     return { rows };
   }
 
-  // Overlap query: SELECT * FROM bookings WHERE room_id = $1 AND status = 'CONFIRMED' AND start_time < $2 AND end_time > $3
+  // Overlap query
   if (normalized.includes('FROM bookings') && normalized.includes('status = \'CONFIRMED\'') && normalized.includes('start_time < $2')) {
     const roomId = parseInt(params[0], 10);
     const newEnd = new Date(params[1]);
@@ -174,8 +182,19 @@ async function query(text, params) {
   return pool.query(text, params);
 }
 
+async function getClient() {
+  if (process.env.NODE_ENV === 'test' && !process.env.TEST_WITH_REAL_DB) {
+    return {
+      query: mockQuery,
+      release: () => {},
+    };
+  }
+  return pool.connect();
+}
+
 module.exports = {
   pool,
   query,
+  getClient,
   inMemoryStore,
 };
