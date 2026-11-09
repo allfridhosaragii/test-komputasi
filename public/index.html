@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RuangKita — Smart Coworking & Meeting Room Booking</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-teal-500 selection:text-white">
+
+  <!-- Header / Navbar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-emerald-400 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-teal-500/20">
+          <i class="fa-solid fa-door-open"></i>
+        </div>
+        <div>
+          <span class="text-xl font-bold tracking-tight bg-gradient-to-r from-teal-400 to-emerald-300 bg-clip-text text-transparent">RuangKita</span>
+          <span class="text-xs text-slate-400 block -mt-1">Coworking & Meeting Hub</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <!-- Live Health Badge -->
+        <div id="healthBadge" class="flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-800/80 border border-slate-700 text-xs font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" id="healthDot"></span>
+          <span class="text-slate-300" id="healthStatus">Checking Health...</span>
+        </div>
+        <span class="hidden md:inline-block text-xs font-semibold px-2.5 py-1 rounded bg-teal-500/10 text-teal-300 border border-teal-500/20">
+          K10 • Kelompok 1
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- Hero Banner -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-teal-900/40 via-slate-900 to-slate-900 border border-slate-800 p-6 md:p-8">
+      <div class="max-w-2xl">
+        <span class="text-xs uppercase tracking-wider text-teal-400 font-bold mb-2 inline-block">🚀 Platform Reservasi Terintegrasi CI/CD</span>
+        <h1 class="text-3xl md:text-4xl font-extrabold text-white leading-tight">Sewa Ruang Meeting Cerdas, Tanpa Bentrok.</h1>
+        <p class="mt-2 text-slate-300 text-sm md:text-base leading-relaxed">
+          Dilengkapi 4 aturan bisnis mutlak: perlindungan jadwal tumpang tindih, pembatasan kapasitas presisi, durasi 1-8 jam di jam operasional 08.00-21.00, serta penanganan denda pembatalan otomatis.
+        </p>
+      </div>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <button onclick="scrollToBooking()" class="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm shadow-lg shadow-teal-500/25 transition">
+          <i class="fa-solid fa-calendar-plus mr-1.5"></i> Buat Booking Baru
+        </button>
+        <button onclick="loadAllData()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-sm transition">
+          <i class="fa-solid fa-rotate mr-1.5"></i> Refresh Data
+        </button>
+      </div>
+    </div>
+
+    <!-- Grid: Rooms List -->
+    <section>
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-building-user text-teal-400"></i> Pilihan Ruang Coworking & Meeting
+          </h2>
+          <p class="text-xs text-slate-400">Kapasitas, fasilitas lengkap, dan tarif transparan per jam</p>
+        </div>
+      </div>
+      <div id="roomsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Injected via JavaScript -->
+        <div class="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 text-center text-slate-400">
+          <i class="fa-solid fa-spinner fa-spin text-2xl text-teal-400"></i> Memuat daftar ruangan...
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 Column Section: Booking Form & Active Reservations -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8" id="bookingSection">
+      
+      <!-- Left: Booking Form -->
+      <section class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="border-b border-slate-800 pb-3">
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-ticket text-teal-400"></i> Formulir Booking Ruang
+          </h2>
+          <p class="text-xs text-slate-400">Validasi server anti-bentrok & aturan operasional</p>
+        </div>
+
+        <form id="bookingForm" onsubmit="handleCreateBooking(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Pilih Ruangan</label>
+            <select id="formRoomId" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-teal-500">
+              <option value="">-- Pilih Ruang --</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Nama Pemesan / Perusahaan</label>
+            <input type="text" id="formCustomer" required placeholder="Contoh: PT Teknologi Bangsa" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-teal-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Jumlah Peserta</label>
+            <input type="number" id="formParticipants" min="1" required placeholder="Contoh: 8" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-teal-500">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Waktu Mulai</label>
+              <input type="datetime-local" id="formStartTime" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-teal-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Waktu Selesai</label>
+              <input type="datetime-local" id="formEndTime" required class="w-full bg-slate-950 border border-slate-700 rounded-xl px-2.5 py-2 text-xs text-slate-200 focus:outline-none focus:border-teal-500">
+            </div>
+          </div>
+
+          <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1">
+            <div class="flex justify-between">
+              <span>Jam Operasional:</span>
+              <span class="text-teal-400 font-medium">08.00 - 21.00 WIB</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Durasi:</span>
+              <span class="text-teal-400 font-medium">1 - 8 Jam</span>
+            </div>
+          </div>
+
+          <div id="formAlert" class="hidden text-xs p-3 rounded-xl"></div>
+
+          <button type="submit" id="submitBookingBtn" class="w-full py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-sm shadow-lg shadow-teal-500/20 transition">
+            Konfirmasi Booking
+          </button>
+        </form>
+      </section>
+
+      <!-- Right: Active Reservations & Calendar List -->
+      <section class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div>
+            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+              <i class="fa-solid fa-list-check text-teal-400"></i> Kalender Pemakaian & Reservasi Aktif
+            </h2>
+            <p class="text-xs text-slate-400">Daftar booking ruangan dengan status denda pembatalan</p>
+          </div>
+          <span id="bookingCount" class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 font-semibold border border-slate-700">0 Data</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase tracking-wider font-semibold">
+              <tr>
+                <th class="p-3 rounded-l-lg">Ruang</th>
+                <th class="p-3">Pemesan</th>
+                <th class="p-3">Waktu Booking</th>
+                <th class="p-3">Total / Denda</th>
+                <th class="p-3">Status</th>
+                <th class="p-3 rounded-r-lg text-right">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTableBody" class="divide-y divide-slate-800">
+              <!-- Injected via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-500 space-y-1">
+    <p class="font-medium text-slate-400">RuangKita (K10) — Tugas Besar 1 Komputasi Awan (DevOps CI/CD Jenkins)</p>
+    <p>Kelompok 1: Muh Naufal Rabbani Marun (038) • Allfridho Prima Anjaynata Saragi (045) • Andika Candra Kurniawan (129)</p>
+  </footer>
+
+  <!-- Frontend Logic -->
+  <script>
+    let roomsData = [];
+
+    async function checkHealth() {
+      try {
+        const res = await fetch('/health');
+        const data = await res.json();
+        const dot = document.getElementById('healthDot');
+        const txt = document.getElementById('healthStatus');
+        if (res.ok && data.status === 'UP') {
+          dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+          txt.innerText = `Healthy (DB: ${data.database?.status || 'OK'})`;
+        } else {
+          dot.className = 'w-2 h-2 rounded-full bg-rose-500';
+          txt.innerText = 'Unhealthy (500)';
+        }
+      } catch (err) {
+        document.getElementById('healthDot').className = 'w-2 h-2 rounded-full bg-rose-500';
+        document.getElementById('healthStatus').innerText = 'Offline';
+      }
+    }
+
+    async function loadRooms() {
+      try {
+        const res = await fetch('/api/rooms');
+        const json = await res.json();
+        if (json.success) {
+          roomsData = json.data;
+          renderRooms(json.data);
+          populateRoomSelect(json.data);
+        }
+      } catch (err) {
+        console.error('Failed to load rooms:', err);
+      }
+    }
+
+    function renderRooms(rooms) {
+      const container = document.getElementById('roomsGrid');
+      if (!rooms || rooms.length === 0) {
+        container.innerHTML = '<div class="p-6 text-center text-slate-400 col-span-3">Belum ada data ruangan.</div>';
+        return;
+      }
+
+      container.innerHTML = rooms.map(r => `
+        <div class="bg-slate-900 border border-slate-800 hover:border-teal-500/50 rounded-2xl p-5 shadow-lg transition duration-200 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold px-2 py-0.5 rounded bg-teal-500/10 text-teal-300 border border-teal-500/20">
+                <i class="fa-solid fa-users mr-1"></i> Maks ${r.capacity} Orang
+              </span>
+              <span class="text-sm font-extrabold text-white">
+                Rp ${parseInt(r.price_per_hour).toLocaleString('id-ID')}<span class="text-xs text-slate-400 font-normal">/jam</span>
+              </span>
+            </div>
+            <h3 class="text-base font-bold text-white">${r.name}</h3>
+            <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+              <i class="fa-solid fa-circle-check text-teal-400 mr-1"></i> ${r.facilities}
+            </p>
+          </div>
+          <button onclick="selectRoomForBooking(${r.id})" class="mt-4 w-full py-2 rounded-xl bg-slate-800 hover:bg-teal-500 hover:text-slate-950 text-slate-200 text-xs font-bold transition">
+            Pilih Ruang Ini
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function populateRoomSelect(rooms) {
+      const select = document.getElementById('formRoomId');
+      select.innerHTML = '<option value="">-- Pilih Ruang --</option>' +
+        rooms.map(r => `<option value="${r.id}">${r.name} (Kapasitas: ${r.capacity} orang)</option>`).join('');
+    }
+
+    function selectRoomForBooking(roomId) {
+      document.getElementById('formRoomId').value = roomId;
+      scrollToBooking();
+    }
+
+    function scrollToBooking() {
+      document.getElementById('bookingSection').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function loadBookings() {
+      try {
+        const res = await fetch('/api/bookings');
+        const json = await res.json();
+        if (json.success) {
+          renderBookings(json.data);
+        }
+      } catch (err) {
+        console.error('Failed to load bookings:', err);
+      }
+    }
+
+    function renderBookings(bookings) {
+      const tbody = document.getElementById('bookingsTableBody');
+      document.getElementById('bookingCount').innerText = `${bookings.length} Data`;
+
+      if (!bookings || bookings.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-500">Belum ada riwayat booking</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = bookings.map(b => {
+        const start = new Date(b.start_time).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+        const end = new Date(b.end_time).toLocaleTimeString('id-ID', { timeStyle: 'short' });
+        const isCancelled = b.status === 'CANCELLED';
+
+        return `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="p-3 font-semibold text-white">${b.room_name}</td>
+            <td class="p-3">
+              <div class="font-medium text-slate-200">${b.customer_name}</div>
+              <div class="text-[10px] text-slate-500">${b.participants} Peserta</div>
+            </td>
+            <td class="p-3">
+              <span class="text-slate-300">${start} - ${end}</span>
+            </td>
+            <td class="p-3">
+              <div class="font-bold ${isCancelled ? 'line-through text-slate-500' : 'text-emerald-400'}">
+                Rp ${parseInt(b.total_price).toLocaleString('id-ID')}
+              </div>
+              ${parseFloat(b.cancellation_fee) > 0 ? `
+                <div class="text-[10px] text-rose-400 font-semibold">
+                  Denda: Rp ${parseInt(b.cancellation_fee).toLocaleString('id-ID')}
+                </div>
+              ` : ''}
+            </td>
+            <td class="p-3">
+              ${isCancelled ? `
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  Dibatalkan
+                </span>
+              ` : `
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  Confirmed
+                </span>
+              `}
+            </td>
+            <td class="p-3 text-right">
+              ${!isCancelled ? `
+                <button onclick="handleCancelBooking(${b.id})" class="px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-400 text-[11px] font-semibold border border-rose-500/20 transition">
+                  Batalkan
+                </button>
+              ` : '<span class="text-slate-600 text-xs">-</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function handleCreateBooking(e) {
+      e.preventDefault();
+      const alertBox = document.getElementById('formAlert');
+      alertBox.className = 'hidden';
+
+      const payload = {
+        room_id: parseInt(document.getElementById('formRoomId').value, 10),
+        customer_name: document.getElementById('formCustomer').value,
+        participants: parseInt(document.getElementById('formParticipants').value, 10),
+        start_time: document.getElementById('formStartTime').value,
+        end_time: document.getElementById('formEndTime').value,
+      };
+
+      try {
+        const res = await fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          alertBox.className = 'text-xs p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 block';
+          alertBox.innerHTML = `<i class="fa-solid fa-check-circle mr-1"></i> ${json.message}`;
+          document.getElementById('bookingForm').reset();
+          loadBookings();
+        } else {
+          alertBox.className = 'text-xs p-3 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 block';
+          alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> <b>Gagal:</b> ${json.message}`;
+        }
+      } catch (err) {
+        alertBox.className = 'text-xs p-3 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 block';
+        alertBox.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> Terjadi kesalahan koneksi server`;
+      }
+    }
+
+    async function handleCancelBooking(id) {
+      if (!confirm('Apakah Anda yakin ingin membatalkan booking ini? Pembatalan kurang dari 2 jam sebelum mulai dikenai denda 50%.')) {
+        return;
+      }
+      try {
+        const res = await fetch(`/api/bookings/${id}/cancel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const json = await res.json();
+        alert(json.message);
+        loadBookings();
+      } catch (err) {
+        alert('Gagal membatalkan booking: ' + err.message);
+      }
+    }
+
+    function loadAllData() {
+      checkHealth();
+      loadRooms();
+      loadBookings();
+    }
+
+    window.onload = loadAllData;
+    setInterval(checkHealth, 10000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "name": "ruangkita-api",
+  "version": "1.0.0",
+  "description": "RuangKita - Booking Ruang Meeting & Coworking Space (K10 - Tugas Besar 1 Komputasi Awan)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "migrate": "node src/db/migrate.js",
+    "seed": "node src/db/seed.js",
+    "test": "jest --runInBand --detectOpenHandles --forceExit"
+  },
+  "keywords": [
+    "devops",
+    "ci-cd",
+    "jenkins",
+    "docker",
+    "ruangkita",
+    "coworking"
+  ],
+  "author": "Kelompok 1 (Muh Naufal, Allfridho Saragi, Andika Candra)",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 10000,
+    "verbose": true
+  }
+}
