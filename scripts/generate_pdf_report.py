@@ -392,3 +392,4 @@ Checkout ──> Test (Quality Gate) ──> Build Image ──> Push Image ─�
 
 if __name__ == "__main__":
     asyncio.run(generate_pdf())
+

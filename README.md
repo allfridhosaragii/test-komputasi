@@ -160,3 +160,4 @@ docker build --target test -t ruangkita:test .
 
 ---
 *© 2026 Kelompok 1 — Komputasi Awan. All rights reserved.*
+

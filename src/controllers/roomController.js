@@ -164,3 +164,4 @@ module.exports = {
   deleteRoom,
   checkAvailability,
 };
+
